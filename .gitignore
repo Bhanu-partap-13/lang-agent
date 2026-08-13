@@ -4,10 +4,6 @@ node_modules/
 .venv/
 __pycache__/
 
-.env
-.env.local
-.env.*.local
-!.env.example
 
 # Databases
 *.db
@@ -15,3 +11,6 @@ __pycache__/
 *.sqlite3
 server/data/*.db
 *.pyc
+
+Skills.md
+AGENTS.md
