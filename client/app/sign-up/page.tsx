@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { signIn, signUp } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -13,8 +14,6 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
 
   const handleNext = () => {
@@ -23,53 +22,50 @@ export default function SignUpPage() {
     }
   };
 
-  const handleSignUp = async () => {
-    if (!email || !password) {
-      setError("Email and password are required.");
-      return;
+  const signUpMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await signUp.email({
+        email,
+        password,
+        name: name || "Learner",
+      });
+      if (error) {
+        throw new Error(error.message || "Failed to sign up.");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      router.push("/learn");
+    },
+    onError: (error) => {
+      const msg = error.message;
+      if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("user")) {
+        setEmailError(msg);
+      }
     }
-    setLoading(true);
-    setError("");
-    setEmailError("");
-    const res = await signUp.email({
-      email,
-      password,
-      name: name || "Learner",
-      fetchOptions: {
-        onSuccess: () => {
-          setLoading(false);
-          router.push("/learn");
-        },
-        onError: (ctx) => {
-          const msg = ctx.error.message || "Something went wrong.";
-          // If the error is about email, show it inline under the email field
-          if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("user")) {
-            setEmailError(msg);
-          } else {
-            setError(msg);
-          }
-          setLoading(false);
-        },
-      },
-    });
-  };
+  });
 
-  const handleGoogle = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const res = await signIn.social({
+  const googleSignInMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await signIn.social({
         provider: "google",
         callbackURL: "/learn",
       });
-      if (res?.error) {
-        setError(res.error.message || "Failed to connect to Google.");
+      if (error) {
+        throw new Error(error.message || "Failed to connect to Google.");
       }
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
+      return data;
+    },
+  });
+
+  const handleSignUp = () => {
+    if (!email || !password) return;
+    setEmailError("");
+    signUpMutation.mutate();
+  };
+
+  const handleGoogle = () => {
+    googleSignInMutation.mutate();
   };
 
   const isNextDisabled = age.trim() === "";
@@ -277,27 +273,37 @@ export default function SignUpPage() {
             </div>
 
             {/* Generic error (non-email) */}
-            {error && (
+            {signUpMutation.error && !emailError && (
               <div className="flex items-center gap-1.5 mt-1.5 mb-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="#FF4B4B">
                   <circle cx="12" cy="12" r="12" />
                   <text x="12" y="17" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial">!</text>
                 </svg>
-                <span className="text-sm font-semibold" style={{ color: "#FF4B4B" }}>{error}</span>
+                <span className="text-sm font-semibold" style={{ color: "#FF4B4B" }}>{signUpMutation.error.message}</span>
+              </div>
+            )}
+            
+            {googleSignInMutation.error && (
+              <div className="flex items-center gap-1.5 mt-1.5 mb-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#FF4B4B">
+                  <circle cx="12" cy="12" r="12" />
+                  <text x="12" y="17" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial">!</text>
+                </svg>
+                <span className="text-sm font-semibold" style={{ color: "#FF4B4B" }}>{googleSignInMutation.error.message}</span>
               </div>
             )}
 
             <button
               onClick={handleSignUp}
-              disabled={isCreateDisabled || loading}
+              disabled={isCreateDisabled || signUpMutation.isPending || googleSignInMutation.isPending}
               className="w-full py-4 rounded-2xl font-bold text-[15px] tracking-widest transition-all uppercase mt-4"
               style={
-                isCreateDisabled || loading
+                isCreateDisabled || signUpMutation.isPending || googleSignInMutation.isPending
                   ? { backgroundColor: "#37464F", color: "#52565D", cursor: "not-allowed", boxShadow: "none" }
                   : { backgroundColor: "#1CB0F6", color: "#fff", boxShadow: "0 4px 0 0 #1899D6" }
               }
             >
-              {loading ? "CREATING..." : "CREATE ACCOUNT"}
+              {signUpMutation.isPending ? "CREATING..." : "CREATE ACCOUNT"}
             </button>
           </div>
         )}

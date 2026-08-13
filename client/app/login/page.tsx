@@ -4,51 +4,42 @@ import { useState } from "react";
 import { signIn, signUp } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useMutation } from "@tanstack/react-query";
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
+  const authMutation = useMutation({
+    mutationFn: async () => {
       if (isSignUp) {
-        const { error: signUpErr } = await signUp.email({
+        const { data, error } = await signUp.email({
           email,
           password,
           name: name || "Learner",
         });
-        if (signUpErr) {
-          setError(signUpErr.message || "Failed to sign up.");
-          setLoading(false);
-          return;
-        }
-        router.push("/learn");
+        if (error) throw new Error(error.message || "Failed to sign up.");
+        return data;
       } else {
-        const { error: signInErr } = await signIn.email({
+        const { data, error } = await signIn.email({
           email,
           password,
         });
-        if (signInErr) {
-          setError(signInErr.message || "Failed to sign in.");
-          setLoading(false);
-          return;
-        }
-        router.push("/learn");
+        if (error) throw new Error(error.message || "Failed to sign in.");
+        return data;
       }
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
+    },
+    onSuccess: () => {
+      router.push("/learn");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    authMutation.mutate();
   };
 
   return (
@@ -58,9 +49,9 @@ export default function LoginPage() {
           {isSignUp ? "Create your profile" : "Log in to Duolingo"}
         </h1>
 
-        {error && (
+        {authMutation.error && (
           <div className="mb-4 rounded-xl bg-red-500/20 p-3 text-center text-sm font-medium text-red-400">
-            {error}
+            {authMutation.error.message}
           </div>
         )}
 
@@ -92,10 +83,10 @@ export default function LoginPage() {
           />
           <button
             type="submit"
-            disabled={loading}
+            disabled={authMutation.isPending}
             className="mt-4 h-12 w-full rounded-2xl bg-[#1CB0F6] font-bold text-white shadow-[0_4px_0_0_#1899D6] transition-all hover:translate-y-[2px] hover:shadow-[0_2px_0_0_#1899D6] disabled:opacity-50"
           >
-            {loading ? "Please wait..." : isSignUp ? "CREATE ACCOUNT" : "LOG IN"}
+            {authMutation.isPending ? "Please wait..." : isSignUp ? "CREATE ACCOUNT" : "LOG IN"}
           </button>
         </form>
 
@@ -110,7 +101,7 @@ export default function LoginPage() {
             <button
               onClick={() => {
                 setIsSignUp(!isSignUp);
-                setError("");
+                authMutation.reset();
               }}
               className="ml-2 font-bold text-[#1CB0F6] hover:underline"
             >
