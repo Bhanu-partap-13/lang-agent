@@ -1,35 +1,37 @@
 import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { exercises } from "@/db/schema";
+import { eq, asc } from "drizzle-orm";
+import type { ExerciseType } from "@/lib/types";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  // Mock a small array of exercises for the dynamic lesson flow
-  const mockExercises = [
-    {
-      id: "ex_1",
-      type: "multiple_choice",
-      prompt: "Which of these is 'the coffee'?",
-      options: ["el café", "el té", "el pan", "la leche"],
-      correctAnswer: "el café",
-    },
-    {
-      id: "ex_2",
-      type: "word_bank",
-      prompt: "Write this in Spanish: 'the bread'",
-      options: ["el", "la", "pan", "café", "té"],
-      correctAnswer: ["el", "pan"],
-    },
-    {
-      id: "ex_3",
-      type: "multiple_choice",
-      prompt: "Which of these is 'the tea'?",
-      options: ["el té", "el café", "el agua", "el pan"],
-      correctAnswer: "el té",
-    },
-  ];
+  try {
+    const lessonExercises = await db
+      .select()
+      .from(exercises)
+      .where(eq(exercises.lessonId, id))
+      .orderBy(asc(exercises.order));
 
-  // Simulate network delay to make it realistic
-  await new Promise((resolve) => setTimeout(resolve, 500));
+    // Map DB rows to the frontend interface, parsing JSON fields where necessary
+    const mappedExercises = lessonExercises.map(ex => ({
+      id: ex.id,
+      type: ex.type as ExerciseType,
+      prompt: ex.prompt,
+      options: ex.options ? (ex.options as string[]) : undefined,
+      correctAnswer: ex.correctAnswer,
+      pairs: ex.pairs ? (ex.pairs as { left: string; right: string }[]) : undefined,
+      audioUrl: ex.audioUrl || undefined,
+      imageUrl: ex.imageUrl || undefined,
+    }));
 
-  return NextResponse.json({ exercises: mockExercises });
+    // Simulate small network delay for realism
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    return NextResponse.json({ exercises: mappedExercises });
+  } catch (error) {
+    console.error("Failed to fetch exercises:", error);
+    return NextResponse.json({ error: "Failed to fetch exercises" }, { status: 500 });
+  }
 }
