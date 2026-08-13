@@ -8,3 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+server/data/*.db
+*.pyc
+
+.env
+.env.local
+.env.*.local
