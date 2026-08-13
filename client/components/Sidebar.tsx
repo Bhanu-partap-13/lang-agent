@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const navItems = [
   {
@@ -92,12 +93,10 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed top-0 left-0 h-screen w-[250px] flex flex-col border-r-2 border-[#202F36] bg-[#131F24] p-4">
+    <div className="fixed top-0 left-0 h-screen w-[280px] flex flex-col border-r-2 border-[#202F36] bg-[#131F24] p-4">
       {/* Logo */}
       <div className="pl-4 pt-6 pb-8">
-        <span className="text-[28px] font-extrabold tracking-tight" style={{ color: "#58CC02", fontFamily: "'Feather Bold', 'Nunito', sans-serif" }}>
-          duolingo
-        </span>
+        <Image src="/logo.svg" alt="Duolingo" width={140} height={36} priority />
       </div>
 
       {/* Nav Items */}

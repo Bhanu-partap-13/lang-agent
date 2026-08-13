@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function RightPanel() {
   return (
-    <div className="fixed top-0 right-0 h-screen w-[360px] flex flex-col p-6 hidden lg:flex bg-[#131F24]">
+    <div className="fixed top-0 right-8 h-screen w-[360px] flex flex-col p-6 hidden lg:flex bg-[#131F24]">
       {/* Top Stats Bar */}
       <div className="flex items-center justify-between mb-8 px-2">
         {/* Flag */}
