@@ -13,16 +13,18 @@ auth_token = settings.TURSO_AUTH_TOKEN
 if db_url.startswith("libsql://"):
     db_url = "sqlite+" + db_url
 
-# Inject the auth token into the URL if using Turso and token is available
-if db_url.startswith("sqlite+libsql://") and auth_token and "authToken=" not in db_url:
+# Inject secure flag if using Turso
+if db_url.startswith("sqlite+libsql://") and "secure=" not in db_url:
     separator = "&" if "?" in db_url else "/?"
-    db_url = f"{db_url}{separator}authToken={auth_token}&secure=true"
+    db_url = f"{db_url}{separator}secure=true"
 
-print(f"DEBUG: Connecting to {db_url.split('authToken=')[0]} (authToken length: {len(auth_token) if auth_token else 0})")
+connect_args = {"check_same_thread": False}
+if auth_token:
+    connect_args["auth_token"] = auth_token
 
 engine = create_engine(
     db_url,
-    connect_args={"check_same_thread": False},
+    connect_args=connect_args,
 )
 
 # Session local
