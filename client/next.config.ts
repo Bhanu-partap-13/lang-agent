@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
         port: "8000",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "**", // Allows images from Render, Turso, or any secure CDN in production
+      },
     ],
   },
 };
