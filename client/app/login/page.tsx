@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn, signUp } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+
 import { useMutation } from "@tanstack/react-query";
 
 export default function LoginPage() {

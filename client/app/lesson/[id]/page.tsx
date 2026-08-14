@@ -54,5 +54,5 @@ export default function LessonPage({ params }: { params: Promise<{ id: string }>
   }
 
   // Once loaded, mount the Lesson Player
-  return <LessonPlayer exercises={data.exercises} />;
+  return <LessonPlayer lessonId={resolvedParams.id} exercises={data.exercises} />;
 }

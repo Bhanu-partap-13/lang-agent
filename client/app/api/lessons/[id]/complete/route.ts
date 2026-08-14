@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { userStats, userSkillProgress, lessons, dailyActivity } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  
-  // Hardcoded for the current seeded test user (or dynamic from auth in future)
-  const userId = "seed_user_1";
+
+  // Resolve userId from session; fall back to seed_user_1 for dev/testing
+  let userId = "seed_user_1";
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (session?.user?.id) userId = session.user.id;
+  } catch {
+    // session unavailable — keep fallback
+  }
+
   const todayStr = new Date().toISOString().split("T")[0];
 
   try {

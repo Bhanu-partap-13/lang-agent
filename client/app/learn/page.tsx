@@ -4,7 +4,7 @@ import LearningPath from "@/components/LearningPath";
 
 export default async function LearnPage() {
   // Fetch session on the server
-  const session = await auth.api.getSession({
+  await auth.api.getSession({
     headers: await headers(),
   });
 
