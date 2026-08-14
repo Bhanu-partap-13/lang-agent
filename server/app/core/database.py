@@ -4,7 +4,7 @@ from app.core.config import settings
 import os
 # Build the final database URL
 db_url = settings.DATABASE_URL
-auth_token = os.getenv("TURSO_AUTH_TOKEN")
+auth_token = settings.TURSO_AUTH_TOKEN
 
 # Handle all the URL format variants cleanly:
 # - "libsql://..."         → convert to "sqlite+libsql://..."
@@ -17,6 +17,8 @@ if db_url.startswith("libsql://"):
 if db_url.startswith("sqlite+libsql://") and auth_token and "authToken=" not in db_url:
     separator = "&" if "?" in db_url else "/?"
     db_url = f"{db_url}{separator}authToken={auth_token}&secure=true"
+
+print(f"DEBUG: Connecting to {db_url.split('authToken=')[0]} (authToken length: {len(auth_token) if auth_token else 0})")
 
 engine = create_engine(
     db_url,

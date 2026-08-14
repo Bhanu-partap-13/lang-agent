@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     # Clerk config (optional for now, trust header)
     CLERK_SECRET_KEY: str = ""
 
+    TURSO_AUTH_TOKEN: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()
