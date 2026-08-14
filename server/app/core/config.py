@@ -7,8 +7,6 @@ class Settings(BaseSettings):
     # We can override this with an env var
     DATABASE_URL: str = "sqlite:///../client/local.db"
     
-    # Clerk config (optional for now, trust header)
-    CLERK_SECRET_KEY: str = ""
 
     TURSO_AUTH_TOKEN: str = ""
 
