@@ -5,6 +5,7 @@ import * as authSchema from './auth-schema';
 
 const client = createClient({
   url: process.env.DATABASE_URL || 'file:local.db',
+  authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
 export const db = drizzle(client, { schema: { ...schema, ...authSchema } });
