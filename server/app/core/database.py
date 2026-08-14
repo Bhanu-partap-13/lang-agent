@@ -1,13 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.dialects import registry
 from app.core.config import settings
 import os
-
-# Manually register the libsql dialect so it works inside Docker on Render.
-# Without this, SQLAlchemy's auto-discovery of entry points fails in containers.
-registry.register("sqlite.libsql", "sqlalchemy_libsql", "LibSQLDialect")
-
 # Build the final database URL
 db_url = settings.DATABASE_URL
 auth_token = os.getenv("TURSO_AUTH_TOKEN")
