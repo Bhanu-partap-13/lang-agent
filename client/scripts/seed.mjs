@@ -1,15 +1,20 @@
-import { createClient } from "@libsql/client";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import postgres from "postgres";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  console.error("ERROR: DATABASE_URL environment variable is missing.");
+  process.exit(1);
+}
 
-const client = createClient({
-  url: `file:${join(__dirname, "../local.db")}`,
-});
+const client = postgres(dbUrl);
 
-async function run(sql, args = []) {
-  await client.execute({ sql, args });
+async function run(sqlStr, args = []) {
+  // Convert sqlite "?" placeholders to postgres "$1", "$2" etc.
+  let index = 1;
+  const pgSql = sqlStr.replace(/\?/g, () => `$${index++}`);
+  // In PG, double quotes are used for column names (e.g. "order"). 
+  // Let's ensure the query runs correctly.
+  await client.unsafe(pgSql, args);
 }
 
 // Ensure chest_claimed column exists in daily_activity
@@ -225,3 +230,4 @@ await run(
 );
 
 console.log("Database seeded successfully with English Grammar Course!");
+await client.end();

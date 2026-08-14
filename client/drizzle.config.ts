@@ -1,10 +1,10 @@
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  dialect: "sqlite",
+  dialect: "postgresql",
   schema: ["./db/schema.ts", "./db/auth-schema.ts"],
   dbCredentials: {
-    url: process.env.DATABASE_URL || "file:local.db",
+    url: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/duolingo",
   },
   verbose: true,
   strict: true,

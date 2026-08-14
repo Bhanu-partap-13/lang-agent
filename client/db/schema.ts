@@ -1,5 +1,17 @@
-import { sqliteTable, text, integer, primaryKey, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, primaryKey, uniqueIndex, jsonb, boolean, customType } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+
+const timestampInteger = customType<{ data: Date; driverData: number }>({
+  dataType() {
+    return "integer";
+  },
+  toDriver(value: Date): number {
+    return Math.floor(value.getTime() / 1000);
+  },
+  fromDriver(value: number): Date {
+    return new Date(value * 1000);
+  },
+});
 
 // ============ AUTH ============
 // better-auth generates and owns: user, session, account, verification.
@@ -10,7 +22,7 @@ import { sql } from "drizzle-orm";
 
 // ============ CONTENT (seeded, admin-managed) ============
 
-export const courses = sqliteTable("courses", {
+export const courses = pgTable("courses", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),                 // "Spanish"
   fromLanguage: text("from_language").notNull(),   // "en"
@@ -18,7 +30,7 @@ export const courses = sqliteTable("courses", {
   iconUrl: text("icon_url"),
 });
 
-export const units = sqliteTable("units", {
+export const units = pgTable("units", {
   id: text("id").primaryKey(),
   courseId: text("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
   order: integer("order").notNull(),
@@ -27,53 +39,51 @@ export const units = sqliteTable("units", {
   colorTheme: text("color_theme").default("green"),
 });
 
-export const skills = sqliteTable("skills", {
+export const skills = pgTable("skills", {
   id: text("id").primaryKey(),
   unitId: text("unit_id").notNull().references(() => units.id, { onDelete: "cascade" }),
   order: integer("order").notNull(),
   title: text("title").notNull(),
   iconUrl: text("icon_url"),
   maxCrowns: integer("max_crowns").notNull().default(5),
-  prerequisiteSkillIds: text("prerequisite_skill_ids", { mode: "json" }).$type<string[]>().default([]),
+  prerequisiteSkillIds: jsonb("prerequisite_skill_ids").$type<string[]>().default([]),
 });
 
-export const lessons = sqliteTable("lessons", {
+export const lessons = pgTable("lessons", {
   id: text("id").primaryKey(),
   skillId: text("skill_id").notNull().references(() => skills.id, { onDelete: "cascade" }),
   order: integer("order").notNull(),
-  type: text("type", { enum: ["new", "practice", "legendary"] }).notNull().default("new"),
+  type: text("type").notNull().default("new"),
   crownLevel: integer("crown_level").notNull().default(1),
 });
 
-export const exercises = sqliteTable("exercises", {
+export const exercises = pgTable("exercises", {
   id: text("id").primaryKey(),
   lessonId: text("lesson_id").notNull().references(() => lessons.id, { onDelete: "cascade" }),
   order: integer("order").notNull(),
-  type: text("type", {
-    enum: ["multiple_choice", "translate", "match_pairs", "fill_blank", "type_answer"],
-  }).notNull(),
+  type: text("type").notNull(),
   prompt: text("prompt").notNull(),
-  options: text("options", { mode: "json" }).$type<string[]>(),               // MCQ / word bank
-  correctAnswer: text("correct_answer", { mode: "json" }).$type<string | string[]>().notNull(),
-  pairs: text("pairs", { mode: "json" }).$type<{ left: string; right: string }[]>(), // match_pairs
+  options: jsonb("options").$type<string[]>(),               // MCQ / word bank
+  correctAnswer: jsonb("correct_answer").$type<string | string[]>().notNull(),
+  pairs: jsonb("pairs").$type<{ left: string; right: string }[]>(), // match_pairs
   audioUrl: text("audio_url"),
   imageUrl: text("image_url"),
 });
 
 // ============ USER PROFILE (extends better-auth's user) ============
 
-export const userProfile = sqliteTable("user_profile", {
+export const userProfile = pgTable("user_profile", {
   userId: text("user_id").primaryKey(),
   username: text("username").notNull(),
   activeCourseId: text("active_course_id").references(() => courses.id),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  createdAt: timestampInteger("created_at").notNull().default(sql`extract(epoch from now())::integer`),
 }, (t) => ({
   usernameIdx: uniqueIndex("username_idx").on(t.username),
 }));
 
 // ============ GAMIFICATION STATE (persisted per user) ============
 
-export const userStats = sqliteTable("user_stats", {
+export const userStats = pgTable("user_stats", {
   userId: text("user_id").primaryKey(),
   totalXp: integer("total_xp").notNull().default(0),
   currentStreak: integer("current_streak").notNull().default(0),
@@ -82,98 +92,98 @@ export const userStats = sqliteTable("user_stats", {
   streakFreezeCount: integer("streak_freeze_count").notNull().default(0),
   hearts: integer("hearts").notNull().default(5),
   maxHearts: integer("max_hearts").notNull().default(5),
-  lastHeartLostAt: integer("last_heart_lost_at", { mode: "timestamp" }),
+  lastHeartLostAt: timestampInteger("last_heart_lost_at"),
   gems: integer("gems").notNull().default(500),
   dailyGoalXp: integer("daily_goal_xp").notNull().default(20),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: timestampInteger("updated_at").notNull().default(sql`extract(epoch from now())::integer`),
 });
 
-export const userSkillProgress = sqliteTable("user_skill_progress", {
+export const userSkillProgress = pgTable("user_skill_progress", {
   userId: text("user_id").notNull(),
   skillId: text("skill_id").notNull().references(() => skills.id, { onDelete: "cascade" }),
-  status: text("status", { enum: ["locked", "available", "in_progress", "completed"] }).notNull().default("locked"),
+  status: text("status").notNull().default("locked"),
   crowns: integer("crowns").notNull().default(0),
   xpEarned: integer("xp_earned").notNull().default(0),
-  lastPracticedAt: integer("last_practiced_at", { mode: "timestamp" }),
+  lastPracticedAt: timestampInteger("last_practiced_at"),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.skillId] }),
 }));
 
-export const lessonAttempts = sqliteTable("lesson_attempts", {
+export const lessonAttempts = pgTable("lesson_attempts", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   lessonId: text("lesson_id").notNull().references(() => lessons.id),
-  startedAt: integer("started_at", { mode: "timestamp" }).notNull(),
-  completedAt: integer("completed_at", { mode: "timestamp" }),
-  status: text("status", { enum: ["in_progress", "passed", "failed"] }).notNull().default("in_progress"),
+  startedAt: timestampInteger("started_at").notNull(),
+  completedAt: timestampInteger("completed_at"),
+  status: text("status").notNull().default("in_progress"),
   heartsLost: integer("hearts_lost").notNull().default(0),
   xpAwarded: integer("xp_awarded").notNull().default(0),
 });
 
-export const exerciseAttempts = sqliteTable("exercise_attempts", {
+export const exerciseAttempts = pgTable("exercise_attempts", {
   id: text("id").primaryKey(),
   lessonAttemptId: text("lesson_attempt_id").notNull().references(() => lessonAttempts.id, { onDelete: "cascade" }),
   exerciseId: text("exercise_id").notNull().references(() => exercises.id),
-  userAnswer: text("user_answer", { mode: "json" }),
-  isCorrect: integer("is_correct", { mode: "boolean" }).notNull(),
+  userAnswer: jsonb("user_answer"),
+  isCorrect: boolean("is_correct").notNull(),
   timeTakenMs: integer("time_taken_ms"),
 });
 
 // Backbone for streaks, daily-goal ring, and weekly leaderboard aggregation
-export const dailyActivity = sqliteTable("daily_activity", {
+export const dailyActivity = pgTable("daily_activity", {
   userId: text("user_id").notNull(),
   date: text("date").notNull(),  // "YYYY-MM-DD"
   xpEarned: integer("xp_earned").notNull().default(0),
   lessonsCompleted: integer("lessons_completed").notNull().default(0),
-  chestClaimed: integer("chest_claimed", { mode: "boolean" }).notNull().default(false),
+  chestClaimed: boolean("chest_claimed").notNull().default(false),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.date] }),
 }));
 
 // ============ ACHIEVEMENTS ============
 
-export const achievements = sqliteTable("achievements", {
+export const achievements = pgTable("achievements", {
   id: text("id").primaryKey(),
   code: text("code").notNull().unique(),          // "streak_7"
   title: text("title").notNull(),
   description: text("description").notNull(),
   iconUrl: text("icon_url"),
-  criteria: text("criteria", { mode: "json" }).notNull(), // { type: "streak", value: 7 }
+  criteria: jsonb("criteria").notNull(), // { type: "streak", value: 7 }
 });
 
-export const userAchievements = sqliteTable("user_achievements", {
+export const userAchievements = pgTable("user_achievements", {
   userId: text("user_id").notNull(),
   achievementId: text("achievement_id").notNull().references(() => achievements.id),
-  unlockedAt: integer("unlocked_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  unlockedAt: timestampInteger("unlocked_at").notNull().default(sql`extract(epoch from now())::integer`),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.achievementId] }),
 }));
 
 // ============ SOCIAL / MULTIPLAYER ============
 
-export const friendships = sqliteTable("friendships", {
+export const friendships = pgTable("friendships", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
   friendId: text("friend_id").notNull(),
-  status: text("status", { enum: ["pending", "accepted", "blocked"] }).notNull().default("pending"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestampInteger("created_at").notNull().default(sql`extract(epoch from now())::integer`),
 });
 
-export const multiplayerMatches = sqliteTable("multiplayer_matches", {
+export const multiplayerMatches = pgTable("multiplayer_matches", {
   id: text("id").primaryKey(),
   hostUserId: text("host_user_id").notNull(),
   skillId: text("skill_id").references(() => skills.id),
-  status: text("status", { enum: ["waiting", "active", "finished"] }).notNull().default("waiting"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
-  startedAt: integer("started_at", { mode: "timestamp" }),
-  endedAt: integer("ended_at", { mode: "timestamp" }),
+  status: text("status").notNull().default("waiting"),
+  createdAt: timestampInteger("created_at").notNull().default(sql`extract(epoch from now())::integer`),
+  startedAt: timestampInteger("started_at"),
+  endedAt: timestampInteger("ended_at"),
 });
 
-export const multiplayerParticipants = sqliteTable("multiplayer_participants", {
+export const multiplayerParticipants = pgTable("multiplayer_participants", {
   id: text("id").primaryKey(),
   matchId: text("match_id").notNull().references(() => multiplayerMatches.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull(),
   score: integer("score").notNull().default(0),
   correctCount: integer("correct_count").notNull().default(0),
-  finishedAt: integer("finished_at", { mode: "timestamp" }),
+  finishedAt: timestampInteger("finished_at"),
 });

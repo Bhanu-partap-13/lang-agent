@@ -34,7 +34,7 @@ export default function RightPanel({ onOpenChest }: { onOpenChest?: () => void }
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           setHeartsCount((h) => Math.min(5, h + 1));
-          refetch?.(); // Sync new regenerated heart with SQLite database
+          refetch?.(); // Sync new regenerated heart with PostgreSQL database
           return 240; // Reset 4 minutes for next heart
         }
         return prev - 1;

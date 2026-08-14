@@ -1,16 +1,10 @@
-import { drizzle } from 'drizzle-orm/libsql';
-import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import * as schema from './schema';
 import * as authSchema from './auth-schema';
 
-let dbUrl = process.env.DATABASE_URL || 'file:local.db';
-if (dbUrl.startsWith('sqlite+libsql://')) {
-  dbUrl = dbUrl.replace('sqlite+', '');
-}
+const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/duolingo';
 
-const client = createClient({
-  url: dbUrl,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+const queryClient = postgres(dbUrl);
 
-export const db = drizzle(client, { schema: { ...schema, ...authSchema } });
+export const db = drizzle({ client: queryClient, schema: { ...schema, ...authSchema } });
