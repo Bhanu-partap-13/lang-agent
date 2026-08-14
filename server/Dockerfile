@@ -26,8 +26,8 @@ RUN uv sync --frozen --no-dev
 # Copy the rest of the application code
 COPY . .
 
-# Expose port for Cloud Run (defaults to 8080)
-EXPOSE 8080
+# Expose port for Render (defaults to 10000)
+EXPOSE 10000
 
 # Run the FastAPI server using Uvicorn via uv
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "10000"]
