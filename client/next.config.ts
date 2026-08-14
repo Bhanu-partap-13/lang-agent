@@ -28,6 +28,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/signup",
+        destination: "/sign-up",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
