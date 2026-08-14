@@ -21,10 +21,42 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
     const skillId = lessonResult[0].skillId;
 
-    // 2. Add XP to the user's stats
+    // 2. Fetch current user stats to check streak continuity
+    const userStatsResult = await db.select().from(userStats).where(eq(userStats.userId, userId)).limit(1);
+    const currentUserStats = userStatsResult[0];
+
+    const isFirstLessonOfDay = !currentUserStats?.lastActivityDate || currentUserStats.lastActivityDate !== todayStr;
+    
+    let newCurrentStreak = currentUserStats?.currentStreak || 0;
+    if (isFirstLessonOfDay) {
+      if (currentUserStats?.lastActivityDate) {
+        const lastDate = new Date(currentUserStats.lastActivityDate);
+        const todayDate = new Date(todayStr);
+        const diffDays = Math.ceil(Math.abs(todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+          // Exactly consecutive day: streak + 1
+          newCurrentStreak = (currentUserStats.currentStreak || 0) + 1;
+        } else {
+          // Missed 1 or more days: reset to 1
+          newCurrentStreak = 1;
+        }
+      } else {
+        // First practice ever: start at 1
+        newCurrentStreak = 1;
+      }
+    } else {
+      newCurrentStreak = Math.max(1, currentUserStats?.currentStreak || 1);
+    }
+
+    const newLongestStreak = Math.max(currentUserStats?.longestStreak || 0, newCurrentStreak);
+
+    // Update user stats with +XP and streak increment if first lesson of day
     await db.update(userStats)
       .set({
         totalXp: sql`${userStats.totalXp} + ${xpToAdd}`,
+        currentStreak: newCurrentStreak,
+        longestStreak: newLongestStreak,
         lastActivityDate: todayStr,
         updatedAt: sql`(unixepoch())`
       })
@@ -89,6 +121,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       xpAwarded: xpToAdd,
       todayXp,
       chestClaimed,
+      isFirstLessonOfDay,
+      currentStreak: newCurrentStreak,
       canClaimChest: todayXp >= 100 && !chestClaimed
     });
   } catch (error) {
