@@ -5,11 +5,14 @@ import { SkillNode } from "./SkillNode";
 import type { NodeStatus, NodeType } from "@/lib/types";
 
 /** Shape of a single skill node on the learning path */
-interface NodeData {
+export interface NodeData {
   id: number;
   type: NodeType | string;
   status: NodeStatus;
   offset: number;
+  hasMascot?: boolean;
+  mascotSide?: "left" | "right";
+  lessonId?: string;
 }
 
 interface UnitProps {
@@ -24,7 +27,7 @@ interface UnitProps {
   onTooltipToggle?: (id: number) => void;
 }
 
-export function Unit({ title, color, nodes, nextUnitTitle, activeTooltipId, onTooltipToggle }: UnitProps) {
+export function Unit({ color, nodes, nextUnitTitle, activeTooltipId, onTooltipToggle }: UnitProps) {
   return (
     <section className="w-full relative mb-8 flex flex-col items-center">
       <div className="flex flex-col items-center space-y-8 w-full relative pt-4">
@@ -38,7 +41,9 @@ export function Unit({ title, color, nodes, nextUnitTitle, activeTooltipId, onTo
             color={color}
             isTooltipOpen={activeTooltipId === node.id}
             onToggleTooltip={() => onTooltipToggle?.(node.id)}
-            unitTitle={title}
+            hasMascot={node.hasMascot}
+            mascotSide={node.mascotSide as "left" | "right"}
+            lessonId={node.lessonId}
           />
         ))}
       </div>

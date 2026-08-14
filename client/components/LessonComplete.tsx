@@ -55,8 +55,8 @@ export function LessonComplete({ hearts, xpAwarded = 10 }: LessonCompleteProps) 
       </div>
 
       <button
-        onClick={() => router.push("/learn")}
-        className="w-full max-w-sm py-4 rounded-xl font-bold text-white uppercase tracking-wide border-b-4 bg-[#58CC02] border-[#58A700] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 transition-all"
+        onClick={() => router.push("/learn?streak_ignited=true")}
+        className="w-full max-w-sm py-4 rounded-xl font-bold text-white uppercase tracking-wide border-b-4 bg-[#58CC02] border-[#58A700] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 transition-all shadow-xl cursor-pointer"
       >
         CONTINUE TO HOME
       </button>
