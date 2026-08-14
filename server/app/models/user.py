@@ -112,3 +112,20 @@ class DailyActivity(Base):
     xp_earned = Column(Integer, nullable=False, default=0)
     lessons_completed = Column(Integer, nullable=False, default=0)
     chest_claimed = Column(Boolean, nullable=False, default=False)
+
+# ============ ACHIEVEMENTS ============
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+    id = Column(String, primary_key=True)
+    code = Column(String, nullable=False, unique=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    icon_url = Column(String)
+    criteria = Column(JSON, nullable=False)
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+    user_id = Column(String, primary_key=True)
+    achievement_id = Column(String, ForeignKey("achievements.id"), primary_key=True)
+    unlocked_at = Column(Integer, nullable=False)

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from app.api.routers import users, lessons
 from app.core.database import Base, engine
 
@@ -10,9 +11,17 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Agentic AI - Duolingo Clone API", version="1.0.0")
 
 # Configure CORS for Next.js frontend
+allowed_origins = [
+    "http://localhost:3000", 
+    "http://localhost:3001"
+]
+prod_origin = os.getenv("FRONTEND_URL")
+if prod_origin:
+    allowed_origins.append(prod_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
