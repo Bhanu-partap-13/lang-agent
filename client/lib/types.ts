@@ -26,4 +26,4 @@ export type FeedbackStatus = "none" | "correct" | "incorrect";
 
 export type NodeStatus = "active" | "locked" | "completed";
 
-export type NodeType = "star" | "dumbbell" | "chest" | "trophy";
+export type NodeType = "star" | "dumbbell" | "chest" | "trophy" | "podcast";
