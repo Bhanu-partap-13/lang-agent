@@ -12,12 +12,20 @@ async function run(sql, args = []) {
   await client.execute({ sql, args });
 }
 
+// Ensure chest_claimed column exists in daily_activity
+try {
+  await run(`ALTER TABLE daily_activity ADD COLUMN chest_claimed INTEGER NOT NULL DEFAULT 0`);
+} catch {
+  // Column already exists or table not created yet
+}
+
 // ─── WIPE CONTENT TABLES (keep auth rows intact) ───────────────────────────
 console.log("Wiping content tables...");
 await run(`DELETE FROM exercise_attempts`);
 await run(`DELETE FROM lesson_attempts`);
 await run(`DELETE FROM user_skill_progress`);
 await run(`DELETE FROM user_stats`);
+await run(`DELETE FROM daily_activity`);
 await run(`DELETE FROM exercises`);
 await run(`DELETE FROM lessons`);
 await run(`DELETE FROM skills`);
@@ -203,10 +211,17 @@ for (const ex of exercises) {
 console.log("Setting up mock user...");
 
 // We ensure "seed_user_1" exists in userStats
+await run(`DELETE FROM daily_activity WHERE user_id = ?`, ["seed_user_1"]);
 await run(`DELETE FROM user_stats WHERE user_id = ?`, ["seed_user_1"]);
 await run(
   `INSERT INTO user_stats (user_id, total_xp, current_streak, longest_streak, hearts, max_hearts, gems) VALUES (?, ?, ?, ?, ?, ?, ?)`,
   ["seed_user_1", 120, 3, 5, 5, 5, 500]
+);
+
+const todayStr = new Date().toISOString().split("T")[0];
+await run(
+  `INSERT INTO daily_activity (user_id, date, xp_earned, lessons_completed, chest_claimed) VALUES (?, ?, ?, ?, ?)`,
+  ["seed_user_1", todayStr, 0, 0, 0]
 );
 
 console.log("Database seeded successfully with English Grammar Course!");

@@ -125,6 +125,7 @@ export const dailyActivity = sqliteTable("daily_activity", {
   date: text("date").notNull(),  // "YYYY-MM-DD"
   xpEarned: integer("xp_earned").notNull().default(0),
   lessonsCompleted: integer("lessons_completed").notNull().default(0),
+  chestClaimed: integer("chest_claimed", { mode: "boolean" }).notNull().default(false),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.date] }),
 }));
